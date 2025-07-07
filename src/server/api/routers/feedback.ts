@@ -7,6 +7,7 @@ export const feedbackRouter = createTRPCRouter({
     .input(
       z.object({
         questionId: z.number(),
+        sessionId: z.number(),
         rating: z.number().optional(),
         feedback: z.string().optional(),
       }),

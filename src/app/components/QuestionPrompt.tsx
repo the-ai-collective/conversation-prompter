@@ -3,7 +3,11 @@
 import { api } from "~/trpc/react";
 import { useState } from "react";
 
-export const QuestionPrompt = () => {
+interface QuestionPromptProps {
+  sessionId: number;
+}
+
+export const QuestionPrompt = ({ sessionId }: QuestionPromptProps) => {
   const {
     mutate: generateQuestion,
     data: question,
@@ -18,17 +22,28 @@ export const QuestionPrompt = () => {
   }>({});
 
   const handleFeedbackSubmit = () => {
-    if (question?.id) {
+    if (question?.id && sessionId) {
       submitFeedback({
         questionId: question.id,
+        sessionId,
         ...feedback,
       });
+      // Clear feedback after submission
+      setFeedback({});
     }
   };
 
   return (
     <div className="flex flex-col items-center gap-4 text-xl">
-      <div>{isPending ? "Generating..." : question?.question}</div>
+      <div className="text-center">
+        {isPending ? (
+          <div className="text-white/80">Generating your question...</div>
+        ) : question?.question ? (
+          <div className="text-white font-medium">{question.question}</div>
+        ) : (
+          <div className="text-white/60">Click &quot;New Question&quot; to get started</div>
+        )}
+      </div>
 
       <div className="flex items-center gap-2">
         <button
@@ -36,12 +51,13 @@ export const QuestionPrompt = () => {
           disabled={isPending}
           onClick={() =>
             generateQuestion({
+              sessionId,
               limit: 10,
               temperature: 0.5,
             })
           }
         >
-          New Question
+          {question ? "Next Question" : "New Question"}
         </button>
       </div>
 
@@ -78,20 +94,20 @@ export const QuestionPrompt = () => {
           <input
             type="text"
             placeholder="Feedback..."
-            value={feedback.feedback}
+            value={feedback.feedback ?? ""}
             onChange={(e) =>
               setFeedback((prev) => ({ ...prev, feedback: e.target.value }))
             }
             className={`w-full rounded-md border border-white/10 px-3 py-2 text-white placeholder-white/60 focus:border-white/20 focus:outline-none ${feedback.feedback ? "ring-2 ring-white" : ""}`}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && feedback.feedback?.trim())
+              if (e.key === "Enter" && (feedback.rating || feedback.feedback?.trim()))
                 handleFeedbackSubmit();
             }}
           />
           <button
             className="cursor-pointer rounded-md bg-white/10 px-4 py-2 text-white hover:bg-white/20 disabled:opacity-50 disabled:pointer-events-none"
             onClick={handleFeedbackSubmit}
-            disabled={!feedback.rating && !feedback.feedback}
+            disabled={!feedback.rating && !feedback.feedback?.trim()}
           >
           📬
           </button>
